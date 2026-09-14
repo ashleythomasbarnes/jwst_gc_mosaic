@@ -1,0 +1,5 @@
+*.gz
+*.pyc
+*.fits
+*.DS_Store
+data/work/.DS_Store
