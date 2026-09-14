@@ -602,6 +602,7 @@ def process_filter(
     observations_api=Observations,
     archive_queried_utc: str | None = None,
     include_large_pointings: bool = False,
+    remove_downloads: bool = False,
 ) -> dict[str, object]:
     """Update or rebuild one filter as a recoverable per-filter transaction."""
     started = utc_now()
@@ -741,7 +742,8 @@ def process_filter(
                     product.filename for product in completed_products
                 ],
                 "downloaded_files": [path.name for path in downloaded_paths],
-                "deleted_downloads": staged_downloads,
+                "deleted_downloads": staged_downloads if remove_downloads else [],
+                "retained_downloads": [] if remove_downloads else staged_downloads,
                 "background_offsets": offsets,
                 "previous_manifest_run_id": previous_meta.get("run_id"),
             }
@@ -754,7 +756,7 @@ def process_filter(
         os.replace(compressed, output_path)
         os.replace(staged_manifest, manifest_path)
         os.replace(staged_log, log_path)
-        if download_dir.exists():
+        if download_dir.exists() and remove_downloads:
             shutil.rmtree(download_dir)
         uncompressed.unlink(missing_ok=True)
         if work_dir.exists() and not any(work_dir.iterdir()):
@@ -779,6 +781,7 @@ def run_pipeline(
     background_match: bool = True,
     observations_api=Observations,
     include_large_pointings: bool = False,
+    remove_downloads: bool = False,
 ) -> list[dict[str, object]]:
     """Query MAST once, then update each requested filter."""
     data_dir = Path(data_dir).expanduser().resolve()
@@ -832,6 +835,7 @@ def run_pipeline(
                 observations_api=observations_api,
                 archive_queried_utc=archive_queried_utc,
                 include_large_pointings=include_large_pointings,
+                remove_downloads=remove_downloads,
             )
             results.append(result)
             print(f"{filter_name.upper()}: {result['action']}")
@@ -877,6 +881,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Include jw10678-o138_t138* and jw10678-o139_t139* (excluded by default)",
     )
+    parser.add_argument(
+        "--remove-downloads",
+        action="store_true",
+        help="Remove downloaded FITS files after a successful run",
+    )
     return parser
 
 
@@ -888,6 +897,7 @@ def main() -> None:
         fresh=args.fresh,
         background_match=not args.no_bgmatch,
         include_large_pointings=args.include_large_pointings,
+        remove_downloads=args.remove_downloads,
     )
 
 

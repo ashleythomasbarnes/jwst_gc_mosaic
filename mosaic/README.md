@@ -80,11 +80,23 @@ data/
     f480m_runs.jsonl
 ```
 
-Downloads are staged below `data/work/<filter>/downloads`. They are deleted
-only after the new compressed mosaic, manifest, and success log have been
-written. If a download or mosaic fails, staged files are retained so the next
-run can resume. A partial staged file whose size does not match MAST is removed
-and downloaded again.
+Downloads are staged below `data/work/<filter>/downloads` and retained after a
+successful run so a later run can reuse them. A partial staged file whose size
+does not match MAST is removed and downloaded again.
+
+To remove downloaded FITS files after the new compressed mosaic, manifest, and
+success log have been written, add `--remove-downloads`:
+
+```bash
+python mosaic/program_10678_pipeline.py --remove-downloads
+```
+
+Without that option, retained files remain below
+`data/work/<filter>/downloads`. A later run checks their sizes against the MAST
+metadata and reuses valid files. This is particularly useful with `--fresh`,
+but requires enough disk space to keep the full selected archive inventory. If
+a download or mosaic fails, staged files are retained regardless of the cleanup
+option so the next run can resume.
 
 Each `.fits.gz` file is lossless and can be opened directly by Astropy. The
 primary HDU contains the surface-brightness mosaic and the `COVERAGE` extension

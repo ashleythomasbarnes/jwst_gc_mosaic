@@ -126,12 +126,20 @@ def test_pipeline_cli_defaults_and_single_filter():
     assert args.filter is None
     assert not args.fresh
     assert not args.include_large_pointings
+    assert not args.remove_downloads
     args = build_parser().parse_args(
-        ["--filter", "f770w", "--fresh", "--include-large-pointings"]
+        [
+            "--filter",
+            "f770w",
+            "--fresh",
+            "--include-large-pointings",
+            "--remove-downloads",
+        ]
     )
     assert args.filter == ["f770w"]
     assert args.fresh
     assert args.include_large_pointings
+    assert args.remove_downloads
 
 
 def test_query_selects_only_level3_association_i2d(tmp_path):
@@ -196,7 +204,7 @@ def test_initial_no_change_incremental_and_fresh_workflow(tmp_path):
     run_log = data_dir / "logs" / "f770w_runs.jsonl"
     assert first["action"] == "initial_build"
     assert output.exists() and manifest.exists()
-    assert not list((data_dir / "work").rglob("*_i2d.fits"))
+    assert list((data_dir / "work").rglob("*_i2d.fits"))
     with fits.open(output) as hdul:
         assert hdul[0].header["NINPUT"] == 1
         assert not hdul[0].header["INCRMNT"]
@@ -218,7 +226,7 @@ def test_initial_no_change_incremental_and_fresh_workflow(tmp_path):
     updated = run_pipeline(data_dir, filters=["f770w"], observations_api=api)[0]
     assert updated["action"] == "incremental_update"
     assert updated["downloaded_files"] == [second_name]
-    assert not list((data_dir / "work").rglob("*_i2d.fits"))
+    assert len(list((data_dir / "work").rglob("*_i2d.fits"))) == 2
     with fits.open(output) as hdul:
         assert hdul[0].header["NINPUT"] == 2
         assert hdul[0].header["INCRMNT"]
@@ -283,3 +291,23 @@ def test_failed_download_preserves_staged_file_and_logs_failure(tmp_path):
     assert not (data_dir / "gc_mosaic_f770w.fits.gz").exists()
     record = read_jsonl(data_dir / "logs" / "f770w_runs.jsonl")[-1]
     assert record["status"] == "failed"
+
+
+def test_remove_downloads_cleans_successful_staging(tmp_path):
+    source = tmp_path / "source.fits"
+    write_i2d(source, 1, 266.4)
+    filename = "jw10678-o001_t001_miri_f770w_i2d.fits"
+    api = MockObservations(product_table([association_row(source, filename)]))
+    data_dir = tmp_path / "data"
+
+    result = run_pipeline(
+        data_dir,
+        filters=["f770w"],
+        observations_api=api,
+        remove_downloads=True,
+    )[0]
+
+    staged = data_dir / "work" / "f770w" / "downloads" / filename
+    assert not staged.exists()
+    assert result["deleted_downloads"] == [filename]
+    assert result["retained_downloads"] == []

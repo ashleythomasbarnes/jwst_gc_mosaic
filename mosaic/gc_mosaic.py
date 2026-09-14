@@ -29,6 +29,14 @@ class Image:
     wcs: WCS
 
 
+def _close_memmap(array: np.memmap) -> None:
+    """Flush and close a memmap before its temporary directory is removed."""
+    array.flush()
+    mapping = getattr(array, "_mmap", None)
+    if mapping is not None and not mapping.closed:
+        mapping.close()
+
+
 def discover_files(input_dir: Path, filter_name: str) -> list[Path]:
     """Find matching i2d FITS files below input_dir."""
     suffix = f"_{filter_name.lower()}_i2d.fits"
@@ -230,7 +238,9 @@ def write_mosaic(
     if output_path.exists() and not overwrite:
         raise FileExistsError(f"Output exists: {output_path} (use --overwrite to replace it)")
 
-    with tempfile.TemporaryDirectory(prefix="gc_mosaic_") as temp_dir:
+    with tempfile.TemporaryDirectory(
+        prefix="gc_mosaic_", ignore_cleanup_errors=True
+    ) as temp_dir:
         mosaic_path = Path(temp_dir) / "mosaic.float32"
         mosaic = np.memmap(mosaic_path, mode="w+", dtype=np.float32, shape=shape_out)
         mosaic[:] = np.nan
@@ -280,6 +290,9 @@ def write_mosaic(
             destination[covered] = component_mosaic[covered]
             coverage_destination = coverage[cutout]
             coverage_destination[covered] = component_footprint[covered]
+            del covered, destination, coverage_destination
+            _close_memmap(component_mosaic)
+            _close_memmap(component_footprint)
             del component_mosaic, component_footprint
 
         mosaic.flush()
@@ -310,6 +323,8 @@ def write_mosaic(
             os.replace(partial_path, output_path)
         finally:
             partial_path.unlink(missing_ok=True)
+            _close_memmap(mosaic)
+            _close_memmap(coverage)
             del mosaic, coverage
 
     print(f"Wrote: {output_path}")

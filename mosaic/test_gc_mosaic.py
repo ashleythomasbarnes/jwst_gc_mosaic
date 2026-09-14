@@ -5,7 +5,7 @@ import pytest
 from astropy.io import fits
 from astropy.wcs import WCS
 
-from mosaic.gc_mosaic import build_parser, discover_files, make_mosaic
+from mosaic.gc_mosaic import _close_memmap, build_parser, discover_files, make_mosaic
 
 
 def write_i2d(path: Path, value: float, ra: float, alt_value: float | None = None) -> None:
@@ -24,6 +24,13 @@ def write_i2d(path: Path, value: float, ra: float, alt_value: float | None = Non
             fits.ImageHDU(np.full((9, 9), alt_value, dtype=np.float32), header=header, name="ALT")
         )
     fits.HDUList(hdus).writeto(path)
+
+
+def test_close_memmap_releases_mapping(tmp_path):
+    array = np.memmap(tmp_path / "array.float32", mode="w+", dtype=np.float32, shape=(2, 2))
+    mapping = array._mmap
+    _close_memmap(array)
+    assert mapping.closed
 
 
 def test_required_cli_arguments():
