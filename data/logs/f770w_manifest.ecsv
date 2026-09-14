@@ -8,13 +8,23 @@
 # - {name: size, datatype: int64}
 # meta: !!omap
 # - {program_id: '10678'}
-# - {run_id: f8a9c0f1-a849-46c9-a71f-05a1dc0ff588}
-# - {completed_utc: '2026-09-14T07:08:20+00:00'}
-# - {n_products: 18}
+# - {run_id: dd709b89-fcbd-45f7-aaae-6657868b584d}
+# - {completed_utc: '2026-09-14T18:16:55+00:00'}
+# - {n_products: 26}
 # schema: astropy-2.0
 filter obs_id filename data_uri size
+f770w jw10678-o098_t098_miri_f770w jw10678-o098_t098_miri_f770w_i2d.fits mast:JWST/product/jw10678-o098_t098_miri_f770w_i2d.fits 47712960
+f770w jw10678-o100_t100_miri_f770w jw10678-o100_t100_miri_f770w_i2d.fits mast:JWST/product/jw10678-o100_t100_miri_f770w_i2d.fits 47712960
+f770w jw10678-o102_t102_miri_f770w jw10678-o102_t102_miri_f770w_i2d.fits mast:JWST/product/jw10678-o102_t102_miri_f770w_i2d.fits 47712960
+f770w jw10678-o105_t105_miri_f770w jw10678-o105_t105_miri_f770w_i2d.fits mast:JWST/product/jw10678-o105_t105_miri_f770w_i2d.fits 47712960
+f770w jw10678-o106_t106_miri_f770w jw10678-o106_t106_miri_f770w_i2d.fits mast:JWST/product/jw10678-o106_t106_miri_f770w_i2d.fits 47712960
+f770w jw10678-o107_t107_miri_f770w jw10678-o107_t107_miri_f770w_i2d.fits mast:JWST/product/jw10678-o107_t107_miri_f770w_i2d.fits 47712960
+f770w jw10678-o108_t108_miri_f770w jw10678-o108_t108_miri_f770w_i2d.fits mast:JWST/product/jw10678-o108_t108_miri_f770w_i2d.fits 47712960
+f770w jw10678-o109_t109_miri_f770w jw10678-o109_t109_miri_f770w_i2d.fits mast:JWST/product/jw10678-o109_t109_miri_f770w_i2d.fits 47712960
+f770w jw10678-o111_t111_miri_f770w jw10678-o111_t111_miri_f770w_i2d.fits mast:JWST/product/jw10678-o111_t111_miri_f770w_i2d.fits 47712960
 f770w jw10678-o112_t112_miri_f770w jw10678-o112_t112_miri_f770w_i2d.fits mast:JWST/product/jw10678-o112_t112_miri_f770w_i2d.fits 47712960
-f770w jw10678-o113_t113_miri_f770w jw10678-o113_t113_miri_f770w_i2d.fits mast:JWST/product/jw10678-o113_t113_miri_f770w_i2d.fits 29551680
+f770w jw10678-o113_t113_miri_f770w jw10678-o113_t113_miri_f770w_i2d.fits mast:JWST/product/jw10678-o113_t113_miri_f770w_i2d.fits 47407680
+f770w jw10678-o114_t114_miri_f770w jw10678-o114_t114_miri_f770w_i2d.fits mast:JWST/product/jw10678-o114_t114_miri_f770w_i2d.fits 47710080
 f770w jw10678-o116_t116_miri_f770w jw10678-o116_t116_miri_f770w_i2d.fits mast:JWST/product/jw10678-o116_t116_miri_f770w_i2d.fits 47715840
 f770w jw10678-o117_t117_miri_f770w jw10678-o117_t117_miri_f770w_i2d.fits mast:JWST/product/jw10678-o117_t117_miri_f770w_i2d.fits 47712960
 f770w jw10678-o118_t118_miri_f770w jw10678-o118_t118_miri_f770w_i2d.fits mast:JWST/product/jw10678-o118_t118_miri_f770w_i2d.fits 47712960
@@ -29,5 +39,3 @@ f770w jw10678-o133_t133_miri_f770w jw10678-o133_t133_miri_f770w_i2d.fits mast:JW
 f770w jw10678-o134_t134_miri_f770w jw10678-o134_t134_miri_f770w_i2d.fits mast:JWST/product/jw10678-o134_t134_miri_f770w_i2d.fits 47712960
 f770w jw10678-o135_t135_miri_f770w jw10678-o135_t135_miri_f770w_i2d.fits mast:JWST/product/jw10678-o135_t135_miri_f770w_i2d.fits 47712960
 f770w jw10678-o137_t137_miri_f770w jw10678-o137_t137_miri_f770w_i2d.fits mast:JWST/product/jw10678-o137_t137_miri_f770w_i2d.fits 47712960
-f770w jw10678-o138_t138_miri_f770w jw10678-o138_t138_miri_f770w_i2d.fits mast:JWST/product/jw10678-o138_t138_miri_f770w_i2d.fits 47712960
-f770w jw10678-o139_t139_miri_f770w jw10678-o139_t139_miri_f770w_i2d.fits mast:JWST/product/jw10678-o139_t139_miri_f770w_i2d.fits 47712960

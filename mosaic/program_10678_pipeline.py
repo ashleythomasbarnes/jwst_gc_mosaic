@@ -23,6 +23,11 @@ from astropy.wcs.utils import pixel_to_pixel
 from astroquery.mast import Observations
 from reproject import reproject_interp
 
+LOCAL_TMP_DIR = Path(__file__).resolve().parents[1] / "tmp"
+LOCAL_TMP_DIR.mkdir(parents=True, exist_ok=True)
+os.environ["TMPDIR"] = str(LOCAL_TMP_DIR)
+tempfile.tempdir = str(LOCAL_TMP_DIR)
+
 try:
     from .gc_mosaic import load_images, make_mosaic_from_paths
 except ImportError:  # Direct execution: python mosaic/program_10678_pipeline.py
@@ -31,6 +36,7 @@ except ImportError:  # Direct execution: python mosaic/program_10678_pipeline.py
 
 PROGRAM_ID = "10678"
 SUPPORTED_FILTERS = ("f770w", "f212n", "f480m")
+LARGE_POINTING_PREFIXES = ("jw10678-o138_t138", "jw10678-o139_t139")
 COPY_CHUNK = 16 * 1024 * 1024
 ARRAY_ROWS = 256
 BACKGROUND_SAMPLE_LIMIT = 1_000_000
@@ -70,7 +76,9 @@ def _plain(value: object, default: str = "") -> str:
     return str(value)
 
 
-def query_archive(observations_api=Observations) -> tuple[list[Product], Table]:
+def query_archive(
+    observations_api=Observations, include_large_pointings: bool = False
+) -> tuple[list[Product], Table]:
     """Query only the association-level Level-3 I2D products we mosaic."""
     observations = observations_api.query_criteria(
         proposal_id=PROGRAM_ID,
@@ -96,7 +104,12 @@ def query_archive(observations_api=Observations) -> tuple[list[Product], Table]:
     )
     selected = selected[
         [
-            int(level) == 3 and filter_from_filename(_plain(filename)) is not None
+            int(level) == 3
+            and filter_from_filename(_plain(filename)) is not None
+            and (
+                include_large_pointings
+                or not _plain(filename).lower().startswith(LARGE_POINTING_PREFIXES)
+            )
             for level, filename in zip(
                 selected["calib_level"], selected["productFilename"], strict=True
             )
@@ -588,6 +601,7 @@ def process_filter(
     background_match: bool,
     observations_api=Observations,
     archive_queried_utc: str | None = None,
+    include_large_pointings: bool = False,
 ) -> dict[str, object]:
     """Update or rebuild one filter as a recoverable per-filter transaction."""
     started = utc_now()
@@ -609,6 +623,7 @@ def process_filter(
         "started_utc": started,
         "archive_queried_utc": archive_queried_utc or started,
         "archive_count": len(archive_products),
+        "include_large_pointings": include_large_pointings,
     }
     try:
         if fresh:
@@ -763,6 +778,7 @@ def run_pipeline(
     fresh: bool = False,
     background_match: bool = True,
     observations_api=Observations,
+    include_large_pointings: bool = False,
 ) -> list[dict[str, object]]:
     """Query MAST once, then update each requested filter."""
     data_dir = Path(data_dir).expanduser().resolve()
@@ -773,7 +789,10 @@ def run_pipeline(
 
     query_started = utc_now()
     try:
-        products, table = query_archive(observations_api=observations_api)
+        products, table = query_archive(
+            observations_api=observations_api,
+            include_large_pointings=include_large_pointings,
+        )
     except Exception as exc:
         for filter_name in requested:
             append_failure_log(
@@ -783,6 +802,7 @@ def run_pipeline(
                     "program_id": PROGRAM_ID,
                     "filter": filter_name,
                     "mode": "fresh" if fresh else "update",
+                    "include_large_pointings": include_large_pointings,
                     "started_utc": query_started,
                     "completed_utc": utc_now(),
                     "status": "failed",
@@ -811,6 +831,7 @@ def run_pipeline(
                 background_match,
                 observations_api=observations_api,
                 archive_queried_utc=archive_queried_utc,
+                include_large_pointings=include_large_pointings,
             )
             results.append(result)
             print(f"{filter_name.upper()}: {result['action']}")
@@ -818,6 +839,7 @@ def run_pipeline(
             failures.append(
                 f"{filter_name}: {exc}. Recovery: python "
                 f"mosaic/program_10678_pipeline.py --fresh --filter {filter_name}"
+                + (" --include-large-pointings" if include_large_pointings else "")
             )
             traceback.print_exc()
     if failures:
@@ -850,6 +872,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Disable additive background matching",
     )
+    parser.add_argument(
+        "--include-large-pointings",
+        action="store_true",
+        help="Include jw10678-o138_t138* and jw10678-o139_t139* (excluded by default)",
+    )
     return parser
 
 
@@ -860,6 +887,7 @@ def main() -> None:
         filters=args.filter,
         fresh=args.fresh,
         background_match=not args.no_bgmatch,
+        include_large_pointings=args.include_large_pointings,
     )
 
 

@@ -1,5 +1,6 @@
 import json
 import shutil
+import tempfile
 from pathlib import Path
 
 import numpy as np
@@ -9,12 +10,18 @@ from astropy.table import Table
 from astropy.wcs import WCS
 
 from mosaic.program_10678_pipeline import (
+    LOCAL_TMP_DIR,
     Product,
     build_parser,
     query_archive,
     run_pipeline,
     validate_product_identities,
 )
+
+
+def test_pipeline_uses_repository_tmp():
+    assert LOCAL_TMP_DIR == Path(__file__).resolve().parents[1] / "tmp"
+    assert Path(tempfile.gettempdir()) == LOCAL_TMP_DIR
 
 
 def write_i2d(path: Path, value: float, ra: float) -> None:
@@ -118,9 +125,13 @@ def test_pipeline_cli_defaults_and_single_filter():
     args = build_parser().parse_args([])
     assert args.filter is None
     assert not args.fresh
-    args = build_parser().parse_args(["--filter", "f770w", "--fresh"])
+    assert not args.include_large_pointings
+    args = build_parser().parse_args(
+        ["--filter", "f770w", "--fresh", "--include-large-pointings"]
+    )
     assert args.filter == ["f770w"]
     assert args.fresh
+    assert args.include_large_pointings
 
 
 def test_query_selects_only_level3_association_i2d(tmp_path):
@@ -128,6 +139,8 @@ def test_query_selects_only_level3_association_i2d(tmp_path):
     write_i2d(source, 1, 266.4)
     rows = [
         association_row(source, "jw10678-o001_t001_miri_f770w_i2d.fits"),
+        association_row(source, "jw10678-o138_t138_miri_f770w_i2d.fits"),
+        association_row(source, "jw10678-o139_t139_nrca_f212n_i2d.fits"),
         (
             source,
             "jw10678001001_02101_00001_mirimage_i2d.fits",
@@ -146,6 +159,16 @@ def test_query_selects_only_level3_association_i2d(tmp_path):
         "jw10678-o001_t001_miri_f770w_i2d.fits"
     ]
     assert len(selected) == 1
+
+    products, selected = query_archive(
+        MockObservations(product_table(rows)), include_large_pointings=True
+    )
+    assert [product.filename for product in products] == [
+        "jw10678-o139_t139_nrca_f212n_i2d.fits",
+        "jw10678-o001_t001_miri_f770w_i2d.fits",
+        "jw10678-o138_t138_miri_f770w_i2d.fits",
+    ]
+    assert len(selected) == 3
 
 
 def test_product_identity_collisions_are_rejected():

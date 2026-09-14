@@ -11,6 +11,8 @@ filters:
 Only MAST minimum-recommended, science, Level-3 `I2D` FITS products are used.
 This is important because a broad search for `I2D` products also returns many
 large detector-level files that are not inputs to these mosaics.
+The distant `jw10678-o138_t138*` and `jw10678-o139_t139*` products are excluded
+by default because they make the mosaic footprint much larger.
 
 ## Run the pipeline
 
@@ -48,6 +50,17 @@ The default data directory is `./data` at the project root, independent of the
 directory from which the command is launched. Use `--data-dir /path/to/data`
 to override it. Add `--no-bgmatch` to disable additive background matching.
 `--filter` may be repeated to process a chosen subset.
+
+To include the two distant, mosaic-enlarging pointings, add:
+
+```bash
+conda run -n astro --no-capture-output \
+    python mosaic/program_10678_pipeline.py --include-large-pointings
+```
+
+Normal incremental runs never remove products already in a mosaic. If an
+existing mosaic includes these pointings and you want the smaller default
+footprint, rebuild it with `--fresh` and omit `--include-large-pointings`.
 
 ## Outputs and disk cleanup
 

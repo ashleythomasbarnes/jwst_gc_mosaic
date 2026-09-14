@@ -3,3 +3,4 @@
 *.fits
 *.DS_Store
 data/work/.DS_Store
+/tmp/
