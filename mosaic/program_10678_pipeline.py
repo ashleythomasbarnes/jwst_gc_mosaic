@@ -603,6 +603,7 @@ def process_filter(
     archive_queried_utc: str | None = None,
     include_large_pointings: bool = False,
     remove_downloads: bool = False,
+    fresh_download: bool = False,
 ) -> dict[str, object]:
     """Update or rebuild one filter as a recoverable per-filter transaction."""
     started = utc_now()
@@ -620,13 +621,19 @@ def process_filter(
         "run_id": run_id,
         "program_id": PROGRAM_ID,
         "filter": filter_name,
-        "mode": "fresh" if fresh else "update",
+        "mode": (
+            "fresh_download"
+            if fresh_download
+            else "fresh" if fresh else "update"
+        ),
         "started_utc": started,
         "archive_queried_utc": archive_queried_utc or started,
         "archive_count": len(archive_products),
         "include_large_pointings": include_large_pointings,
     }
     try:
+        if fresh_download and download_dir.exists():
+            shutil.rmtree(download_dir)
         if fresh:
             previous, previous_meta = [], {}
         else:
@@ -782,8 +789,10 @@ def run_pipeline(
     observations_api=Observations,
     include_large_pointings: bool = False,
     remove_downloads: bool = False,
+    fresh_download: bool = False,
 ) -> list[dict[str, object]]:
     """Query MAST once, then update each requested filter."""
+    fresh = fresh or fresh_download
     data_dir = Path(data_dir).expanduser().resolve()
     data_dir.mkdir(parents=True, exist_ok=True)
     requested = list(dict.fromkeys(SUPPORTED_FILTERS if filters is None else filters))
@@ -804,7 +813,11 @@ def run_pipeline(
                     "run_id": str(uuid.uuid4()),
                     "program_id": PROGRAM_ID,
                     "filter": filter_name,
-                    "mode": "fresh" if fresh else "update",
+                    "mode": (
+                        "fresh_download"
+                        if fresh_download
+                        else "fresh" if fresh else "update"
+                    ),
                     "include_large_pointings": include_large_pointings,
                     "started_utc": query_started,
                     "completed_utc": utc_now(),
@@ -836,6 +849,7 @@ def run_pipeline(
                 archive_queried_utc=archive_queried_utc,
                 include_large_pointings=include_large_pointings,
                 remove_downloads=remove_downloads,
+                fresh_download=fresh_download,
             )
             results.append(result)
             print(f"{filter_name.upper()}: {result['action']}")
@@ -869,7 +883,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--fresh",
         action="store_true",
-        help="Download all current products and exactly rebuild selected mosaics",
+        help="Exactly rebuild selected mosaics, reusing staged downloads",
+    )
+    parser.add_argument(
+        "--fresh-download",
+        action="store_true",
+        help="Delete staged downloads, redownload all products, and exactly rebuild",
     )
     parser.add_argument(
         "--no-bgmatch",
@@ -898,6 +917,7 @@ def main() -> None:
         background_match=not args.no_bgmatch,
         include_large_pointings=args.include_large_pointings,
         remove_downloads=args.remove_downloads,
+        fresh_download=args.fresh_download,
     )
 
 

@@ -98,6 +98,18 @@ but requires enough disk space to keep the full selected archive inventory. If
 a download or mosaic fails, staged files are retained regardless of the cleanup
 option so the next run can resume.
 
+`--fresh` completely rebuilds the selected mosaics while reusing valid staged
+downloads. To discard the staged files first and download every selected
+product again, use:
+
+```bash
+python mosaic/program_10678_pipeline.py --fresh-download
+```
+
+`--fresh-download` implies `--fresh`. It removes staged downloads only for the
+selected filters, then retains the newly downloaded files unless combined with
+`--remove-downloads`.
+
 Each `.fits.gz` file is lossless and can be opened directly by Astropy. The
 primary HDU contains the surface-brightness mosaic and the `COVERAGE` extension
 contains the summed reprojection weights needed for future incremental

@@ -125,6 +125,7 @@ def test_pipeline_cli_defaults_and_single_filter():
     args = build_parser().parse_args([])
     assert args.filter is None
     assert not args.fresh
+    assert not args.fresh_download
     assert not args.include_large_pointings
     assert not args.remove_downloads
     args = build_parser().parse_args(
@@ -132,12 +133,14 @@ def test_pipeline_cli_defaults_and_single_filter():
             "--filter",
             "f770w",
             "--fresh",
+            "--fresh-download",
             "--include-large-pointings",
             "--remove-downloads",
         ]
     )
     assert args.filter == ["f770w"]
     assert args.fresh
+    assert args.fresh_download
     assert args.include_large_pointings
     assert args.remove_downloads
 
@@ -311,3 +314,26 @@ def test_remove_downloads_cleans_successful_staging(tmp_path):
     assert not staged.exists()
     assert result["deleted_downloads"] == [filename]
     assert result["retained_downloads"] == []
+
+
+def test_fresh_download_clears_staging_and_implies_fresh(tmp_path):
+    source = tmp_path / "source.fits"
+    write_i2d(source, 1, 266.4)
+    filename = "jw10678-o001_t001_miri_f770w_i2d.fits"
+    api = MockObservations(product_table([association_row(source, filename)]))
+    data_dir = tmp_path / "data"
+    download_dir = data_dir / "work" / "f770w" / "downloads"
+    download_dir.mkdir(parents=True)
+    (download_dir / "stale.fits").write_bytes(b"stale")
+
+    result = run_pipeline(
+        data_dir,
+        filters=["f770w"],
+        observations_api=api,
+        fresh_download=True,
+    )[0]
+
+    assert result["action"] == "fresh_rebuild"
+    assert result["mode"] == "fresh_download"
+    assert not (download_dir / "stale.fits").exists()
+    assert (download_dir / filename).exists()
